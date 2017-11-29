@@ -1,0 +1,17 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\FrameXML\UI.xsd">
+<Script file="sraddon.lua"/>
+<Frame name="SRAddon" toplevel="true" parent="UIParent" movable="true" enableMouse="true" hidden="true">
+  <Scripts>
+    <OnLoad>
+      SRAddon_OnLoad();
+    </OnLoad>
+    <OnEvent>
+      SRAddon_OnEvent(this, event, arg1);
+    </OnEvent>
+    <OnUpdate>
+      SRAddon_OnUpdate( "" );
+    </OnUpdate>
+  </Scripts>
+</Frame>
+</Ui>

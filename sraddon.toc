@@ -1,0 +1,10 @@
+## Interface: 11200
+## Title: SRAddon
+## Version: 0.1
+## Notes: this is my custom note?
+## Author: K9Jack
+## SavedVariables:
+## SavedVariablesPerCharacter: SRAddonVariables
+sraddon.lua
+sraddon.xml
+Bindings.xml
