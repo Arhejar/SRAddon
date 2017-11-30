@@ -7,7 +7,7 @@
       SRAddon_OnLoad();
     </OnLoad>
     <OnEvent>
-      SRAddon_OnEvent(this, event, arg1);
+      SRAddon_OnEvent(this, event, arg1, arg2);
     </OnEvent>
     <OnUpdate>
       SRAddon_OnUpdate( "" );

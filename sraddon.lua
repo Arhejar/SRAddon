@@ -8,11 +8,17 @@ function SRAddon_OnLoad()
     this:RegisterEvent("PLAYER_ENTERING_WORLD");
     this:RegisterEvent("VARIABLES_LOADED");
     this:RegisterEvent("ZONE_CHANGED_NEW_AREA");
+    this:RegisterEvent("TIME_PLAYED_MSG");
     SRAddon_SlashCommands();
 end
 
-function SRAddon_OnEvent(this, event, arg1)
-    if ( event == "PLAYER_LEVEL_UP" ) then
+function SRAddon_OnEvent(this, event, arg1, arg2)
+    if ( event == "TIME_PLAYED_MSG" ) then
+        if ( playedRequest ) then
+            ChatFrame1:AddMessage("Total time played: "..arg1)
+            ChatFrame1:AddMessage("Time played this level: "..arg2)
+        end
+    elseif ( event == "PLAYER_LEVEL_UP" ) then
         -- Track player level
         ChatFrame1:AddMessage("Check one. ");
         SRAddonVariables["playerLevel"] = arg1;
@@ -26,6 +32,10 @@ function SRAddon_OnEvent(this, event, arg1)
         -- Run on world loading to ensure player has a level
         SRAddonVariables["playerLevel"] = UnitLevel("player");
         SRAddonVariables["currentZone"] = GetZoneText();
+
+        --Unregisters an event from the chat window to avoid yellow system messages spam
+        --/played will still work through this addon (it is registered to the TIME_PLAYED_MSG event)
+        DEFAULT_CHAT_FRAME:UnregisterEvent("TIME_PLAYED_MSG");
 
         -- If the player's level is 1 with 0 xp, wipe the saved variables.
         -- This safeguards against quests being carried over from deleted characters.
@@ -66,9 +76,22 @@ function SRAddon_InitVars()
 end
 
 function SRAddon_SlashCommands()
+    --HIJACKING DEFAULT WOW FUNCTION
+    --Overwrites /played so it functions after we unregister the TIME_PLAYED_MSG event from the default chat frame.
+    SlashCmdList["PLAYED"] = function()
+        playedRequest = true;
+        RequestTimePlayed();
+    end
+
+    --Addon-specific commands
     SLASH_SRFRAME1 = "/SRframe";
     SlashCmdList["SRFRAME"] = function()
         ShowFrames();
+    end
+    SLASH_PLAYED1 = "/played";
+    SLASH_SRTIME1 = "/SRtime";
+    SlashCmdList["SRTIME"] = function()
+        RequestTimePlayed();
     end
     SLASH_SRLEVEL1 = "/SRlevel";
     SlashCmdList["SRLEVEL"] = function()
@@ -189,3 +212,20 @@ function QuestRewardCompleteButton_OnClick()
 		table.insert(SRAddonVariables["completedQuestLog"],{name,SRAddonVariables["playerLevel"],SRAddonVariables["currentZone"]});
     end
 end
+
+
+--[[FIX THIS
+function SR_DisplayTimePlayed(totalTime, levelTime)
+	local info = ChatTypeInfo["SYSTEM"];
+    local d;
+	local h;
+	local m;
+	local s;
+	d, h, m, s = ChatFrame_TimeBreakDown(totalTime);
+	local string = format(TEXT(TIME_PLAYED_TOTAL), format(TEXT(TIME_DAYHOURMINUTESECOND), d, h, m, s));
+	this:AddMessage(string, info.r, info.g, info.b, info.id);
+
+	d, h, m, s = ChatFrame_TimeBreakDown(levelTime);
+	local string = format(TEXT(TIME_PLAYED_LEVEL), format(TEXT(TIME_DAYHOURMINUTESECOND), d, h, m, s));
+this:AddMessage(string, info.r, info.g, info.b, info.id);
+]]--
