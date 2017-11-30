@@ -20,6 +20,8 @@ function SRAddon_OnEvent(this, event, arg1)
         if ( not SRAddonVariables ) then
             SRAddon_InitVars();
         end
+
+        InitFrame(); --Defined in sraddonFrame.lua
     elseif ( event == "PLAYER_ENTERING_WORLD" ) then
         -- Run on world loading to ensure player has a level
         SRAddonVariables["playerLevel"] = UnitLevel("player");
@@ -56,6 +58,7 @@ function SRAddon_InitVars()
 
     SRAddonVariables = {};
     SRAddonVariables["playerLevel"] = 1;
+    SRAddonVariables["selectedLevel"] = nil;
     SRAddonVariables["DEBUG_MODE"] = false;
     SRAddonVariables["currentZone"] = nil;
     SRAddonVariables["questLog"] = {};
@@ -63,6 +66,10 @@ function SRAddon_InitVars()
 end
 
 function SRAddon_SlashCommands()
+    SLASH_SRFRAME1 = "/SRframe";
+    SlashCmdList["SRFRAME"] = function()
+        ShowFrames();
+    end
     SLASH_SRLEVEL1 = "/SRlevel";
     SlashCmdList["SRLEVEL"] = function()
         ChatFrame1:AddMessage("Player level is: "..SRAddonVariables["playerLevel"]);
@@ -181,37 +188,4 @@ function QuestRewardCompleteButton_OnClick()
 
 		table.insert(SRAddonVariables["completedQuestLog"],{name,SRAddonVariables["playerLevel"],SRAddonVariables["currentZone"]});
     end
-end
-
-
---------------------------------------
---   Generating the AddOn's frame   --
---------------------------------------
-
-function init()
-  SRAddonFrame = CreateFrame("Frame", "SRAddonFrame")
-  SRAddonFrame:SetHeight(200)
-  SRAddonFrame:SetWidth(200)
-  SRAddonFrame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",tile = true,tileSize = 16,insets = {left = -1.5, right = -1.5, top = -1.5, bottom = -1.5}})
-  SRAddonFrame:SetBackdropColor(0.18,0.27,0.5)
-  SRAddonFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-  SRAddonFrame:SetFrameStrata("DIALOG")
-  SRAddonFrame:EnableMouse(1)
-  SRAddonFrame:SetMovable(1)
-  SRAddonFrame:RegisterForDrag("LeftButton")
-  SRAddonFrame:SetScript("OnDragStart", StartMoving)
-  SRAddonFrame:SetScript("OnDragStop", StopMovingOrSizing)
-
-  textfield = CreateFrame("Frame")
-  SRAddonFrame.CloseButton = CreateFrame("Button", "SRAddonCloseButton", SRAddonFrame,"UIPanelCloseButton")
-  SRAddonFrame.CloseButton:SetPoint("TOPRIGHT", SRAddonFrame, "TOPRIGHT", 0, 0)
-  SRAddonFrame:Show()
-end
-
-function StartMoving()
-  this:StartMoving()
-end
-
-function StopMovingOrSizing()
-  this:StopMovingOrSizing()
 end

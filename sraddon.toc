@@ -5,6 +5,7 @@
 ## Author: K9Jack
 ## SavedVariables:
 ## SavedVariablesPerCharacter: SRAddonVariables
+sraddonFrame.lua
 sraddon.lua
 sraddon.xml
 Bindings.xml
