@@ -27,10 +27,9 @@ function SRAddon_OnEvent(this, event, arg1, arg2)
         if ( not SRAddonVariables ) then
             SRAddon_InitVars();
         end
-
         InitFrame(); --Defined in sraddonFrame.lua
     elseif ( event == "PLAYER_ENTERING_WORLD" ) then
-        -- Run on world loading to ensure player has a level
+        -- Run on world loading to ensure player has a level and a position
         SRAddonVariables["playerLevel"] = UnitLevel("player");
         SRAddonVariables["currentZone"] = GetZoneText();
 
@@ -63,94 +62,94 @@ function SRAddon_OnEvent(this, event, arg1, arg2)
 end
 
 function SRAddon_InitVars()
-    if ( SRAddonVariables and SRAddonVariables["DEBUG_MODE"] ) then
-        ChatFrame1:AddMessage("InitVars command initiated.")
-    end
-
-    SRAddonVariables = {};
-    SRAddonVariables["playerLevel"] = 1;
-    SRAddonVariables["selectedLevel"] = nil;
-    SRAddonVariables["DEBUG_MODE"] = false;
-    SRAddonVariables["currentZone"] = nil;
-    SRAddonVariables["questLog"] = {};
-    SRAddonVariables["completedQuestLog"] = {};
+    SRAddonVariables = {
+	["playerLevel"] = 1,
+	["currentZone"] = "",
+	["DEBUG_MODE"] = false,
+	["selectedLevel"] = nil,
+	["currentQuestLog"] = {},
+	["completedQuestLog"] = {}
+	};
 end
 
 function SRAddon_SlashCommands()
     --HIJACKING DEFAULT WOW FUNCTION
     --Overwrites /played so it functions after we unregister the TIME_PLAYED_MSG event from the default chat frame.
+	SLASH_PLAYED1 = "/played";
     SlashCmdList["PLAYED"] = function()
         playedRequest = true;
         RequestTimePlayed();
     end
 
     --Addon-specific commands
-    SLASH_SRFRAME1 = "/SRframe";
-    SlashCmdList["SRFRAME"] = function()
-        ShowFrames();
-    end
-    SLASH_PLAYED1 = "/played";
-    SlashCmdList["PLAYED"] = function()
-	playedRequest = true;
-	RequestTimePlayed();
-    end
-    SLASH_SRTIME1 = "/SRtime";
-    SlashCmdList["SRTIME"] = function()
-        RequestTimePlayed();
-    end
-    SLASH_SRLEVEL1 = "/SRlevel";
-    SlashCmdList["SRLEVEL"] = function()
-        ChatFrame1:AddMessage("Player level is: "..SRAddonVariables["playerLevel"]);
-    end
-    SLASH_SRDEBUG1 = "/SRdebug";
-    SlashCmdList["SRDEBUG"] = function()
-        SRAddonVariables["DEBUG_MODE"] = not SRAddonVariables["DEBUG_MODE"];
-        if ( SRAddonVariables["DEBUG_MODE"] ) then
-            ChatFrame1:AddMessage("Debug state set to true.");
-        else
-            ChatFrame1:AddMessage("Debug state set to false.");
-        end
-    end
-    SLASH_SRLOG1 = "/SRlog";
-    SlashCmdList["SRLOG"] = function()
-        if ( not SRAddonVariables["questLog"] ) then
-            ChatFrame1:AddMessage("The quest log does not exist.")
-        elseif ( next(SRAddonVariables["questLog"]) == nil ) then
-            ChatFrame1:AddMessage("The quest log is empty.")
-        else
-            ChatFrame1:AddMessage("Quests found. Listing quests:")
-            for i,quest in SRAddonVariables["questLog"] do
-                ChatFrame1:AddMessage("The quest "..quest.." is in quest log position "..i..".")
-            end
-        end
-    end
-    SLASH_SRCOMPLETED1 = "/SRcompleted";
-    SlashCmdList["SRCOMPLETED"] = function()
-        if ( not SRAddonVariables["completedQuestLog"] ) then
-            ChatFrame1:AddMessage("The completed quests log does not exist.")
-        elseif ( next(SRAddonVariables["completedQuestLog"]) == nil ) then
-            ChatFrame1:AddMessage("The completed quests log is empty.")
-        else
-            ChatFrame1:AddMessage("Completed quests found. Listing first twenty quests:")
-            local i = 1;
-            for i,quest in SRAddonVariables["completedQuestLog"] do
-                if i>20 then
-                    break
-                else
-                    ChatFrame1:AddMessage("The quest "..quest[1].." was completed at player level "..quest[2].." in the zone "..quest[3].." and is listed in position "..i..".")
-                end
-            end
-        end
-    end
-    SLASH_SRQUEST1 = "/SRquest";
-    SlashCmdList["SRQUEST"] = function(msg)
-        local title, level, _, isHeader = GetQuestLogTitle(msg);
-        ChatFrame1:AddMessage(title);
-        ChatFrame1:AddMessage(level);
-        if isHeader then
-            ChatFrame1:AddMessage(isHeader);
-        end
-    end
+    SLASH_SR1 = "/SR";
+    SlashCmdList["SR"] = SlashCommandParser(msg);
+end
+
+local CommandList = {
+	["FRAME"] = 	function()
+       			 		ShowFrames();
+    				end,
+	["QUEST"] = function(index)
+					if ( index == math.floor(index) and index > 0 and GetNumQuestLogEntries() >= index ) then
+        			local title, level, _, isHeader = GetQuestLogTitle(index);
+        			ChatFrame1:AddMessage(title);
+        			ChatFrame1:AddMessage(level);
+       	 			if isHeader then
+            			ChatFrame1:AddMessage(isHeader);
+        			end
+					else
+						ChatFrame1:AddMessage("Function QUEST expects an integer as input.");
+					end
+				end,
+	["COMPLETED"] = function()
+        				if ( not SRAddonVariables["completedQuestLog"] ) then
+            				ChatFrame1:AddMessage("The completed quests log does not exist.")
+        				elseif ( next(SRAddonVariables["completedQuestLog"]) == nil ) then
+            				ChatFrame1:AddMessage("The completed quests log is empty.")
+        				else
+            				ChatFrame1:AddMessage("Completed quests found. Listing first twenty quests:")
+            				local i = 1;
+            				for i,quest in SRAddonVariables["completedQuestLog"] do
+                				if i>20 then
+                    				break
+                				else
+                    				ChatFrame1:AddMessage("The quest "..quest[1].." was completed at player level "..quest[2].." in the zone "..quest[3].." and is listed in position "..i..".")
+                				end
+            				end
+        				end
+    				end,
+	["LOG"] = 	function()
+					if ( not SRAddonVariables["questLog"] ) then
+            			ChatFrame1:AddMessage("The quest log does not exist.")
+        			elseif ( next(SRAddonVariables["questLog"]) == nil ) then
+            			ChatFrame1:AddMessage("The quest log is empty.")
+        			else
+            			ChatFrame1:AddMessage("Quests found. Listing quests:")
+            			for i,quest in SRAddonVariables["questLog"] do
+                			ChatFrame1:AddMessage("The quest "..quest.." is in quest log position "..i..".")
+            			end
+        			end
+    			end,
+	["DEBUG"] = function()
+					SRAddonVariables["DEBUG_MODE"] = not SRAddonVariables["DEBUG_MODE"];
+        			if ( SRAddonVariables["DEBUG_MODE"] ) then
+            			ChatFrame1:AddMessage("Debug state set to true.");
+        			else
+            			ChatFrame1:AddMessage("Debug state set to false.");
+        			end
+    			end
+	};
+end
+
+local function SlashCommandParser(msg)
+	if string.match(msg, '^.-%s')
+		if CommandList[string.match(string.upper(msg), '^.-%s')] then
+			CommandList[string.match(string.upper(msg), '^.-%s')]
+		end
+	else
+		ChatFrame1:AddMessage("Input not defined for SRAddon");
+	end
 end
 
 local function GetPlayedTimeString(arg1,arg2)
