@@ -15,12 +15,13 @@ end
 function SRAddon_OnEvent(this, event, arg1, arg2)
     if ( event == "TIME_PLAYED_MSG" ) then
         if ( playedRequest ) then
-            ChatFrame1:AddMessage("Total time played: "..arg1)
-            ChatFrame1:AddMessage("Time played this level: "..arg2)
+			totalTimeString, localTimeString = GetPlayedTimeString(arg1, arg2);
+			ChatFrame1:AddMessage(totalTimeString);
+			ChatFrame1:AddMessage(localTimeString);
+	    playedRequest =  false;
         end
     elseif ( event == "PLAYER_LEVEL_UP" ) then
         -- Track player level
-        ChatFrame1:AddMessage("Check one. ");
         SRAddonVariables["playerLevel"] = arg1;
     elseif ( event == "VARIABLES_LOADED" ) then
         if ( not SRAddonVariables ) then
@@ -34,11 +35,11 @@ function SRAddon_OnEvent(this, event, arg1, arg2)
         SRAddonVariables["currentZone"] = GetZoneText();
 
         --Unregisters an event from the chat window to avoid yellow system messages spam
-        --/played will still work through this addon (it is registered to the TIME_PLAYED_MSG event)
+        --/played will still work through this addon
         DEFAULT_CHAT_FRAME:UnregisterEvent("TIME_PLAYED_MSG");
 
         -- If the player's level is 1 with 0 xp, wipe the saved variables.
-        -- This safeguards against quests being carried over from deleted characters.
+        -- This safeguards against quests being carried over from deleted characters with an identical name.
         if ( SRAddonVariables["playerLevel"] == 1 ) then
             if ( UnitXP("player") == 0 ) then
                 SRAddon_InitVars();
@@ -89,6 +90,10 @@ function SRAddon_SlashCommands()
         ShowFrames();
     end
     SLASH_PLAYED1 = "/played";
+    SlashCmdList["PLAYED"] = function()
+	playedRequest = true;
+	RequestTimePlayed();
+    end
     SLASH_SRTIME1 = "/SRtime";
     SlashCmdList["SRTIME"] = function()
         RequestTimePlayed();
@@ -148,12 +153,46 @@ function SRAddon_SlashCommands()
     end
 end
 
+local function GetPlayedTimeString(arg1,arg2)
+	--convert the life time of the character into a formatted string
+	local totalTime = arg1;
+	local localTime = arg2;
+	local secondsPerPeriod = {30*86400, 604800, 86400, 3600, 60, 1};
+	local periodName = {"month", "week", "day", "hour", "minute", "second"};
+	local periods1 = {};
+	local periods2 = {};
+	for i,seconds in secondsPerPeriod do
+		numPeriods1 = math.fmod(totalTime, seconds);
+		numPeriods2 = math.fmod(localTime, seconds);
+		table.insert(periods1,numPeriods1);
+		table.insert(periods2,numPeriods2);
+		totalTime = totalTime - numPeriods1*seconds;
+		localTime = localTime - numPeriods2*seconds;
+	end
+	local playedTimeString1 = "Total time played: "
+	local playedTimeString2 = "Time played this level: ";
+	for i,periods in periods1 do
+		if ( periods==1 ) then
+			local playedTimeString1 = playedTimeString1..periods.." "..periodName[i].." ";
+		else
+			local playedTimeString1 = playedTimeString1..periods.." "..periodName[i].."s ";
+		end
+	end
+	for i,periods in periods2 do
+		if ( periods==1 ) then
+			local playedTimeString2 = playedTimeString2..periods.." "..periodName[i].." ";
+		else
+			local playedTimeString2 = playedTimeString2..periods.." "..periodName[i].."s ";
+		end
+	end
+	return playedTimeString1, playedTimeString2;
+end
 
 -----------------------------------------------
 -- Overwriting Blizzard UI element functions --
 -----------------------------------------------
 
-local AbandonQuestFunction = AbandonQuest;
+local SRAbandonQuestFunction = AbandonQuest;
 abandonFlag = 0;
 function AbandonQuest()
     -- This code is apparently run twice.
@@ -172,7 +211,7 @@ function AbandonQuest()
     end
 
     -- Run the normal 1.12 WoW function
-    return AbandonQuestFunction();
+    return SRAbandonQuestFunction();
 end
 
 function QuestDetailAcceptButton_OnClick()
