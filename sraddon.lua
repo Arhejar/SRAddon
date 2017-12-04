@@ -57,7 +57,7 @@ function SRAddon_OnEvent(this, event, arg1, arg2)
             end
         end
     elseif ( event == "ZONE_CHANGED_NEW_AREA" ) then
-        SRAddonVariables["currentZone"] = GetZoneText();
+        SRAddon_StackInsertZoneChange();
     end
 end
 
@@ -70,6 +70,32 @@ function SRAddon_InitVars()
 	["currentQuestLog"] = {},
 	["completedQuestLog"] = {}
 	};
+	SRAddonStack = {};
+end
+
+function SRAddon_StackInsertZoneChange()
+	local newZone = GetZoneText();
+	table.insert(SRAddonStack,{"ZoneChanged",SRAddonVariables["currentZone"],newZone}});
+	SRAddonVariables["currentZone"] = newZone;
+end
+
+
+function SRAddon_StackInsertQuestAccepted(questTitle)
+	SetMapToCurrentZone() 
+	local posX, posY = GetPlayerMapPosition("player");
+	table.insert(SRAddonStack,{"QuestAccepted",questTitle,SRAddonVariables["playerLevel"],posX,posY}});
+end
+
+function SRAddon_StackRemoveQuestAccepted(questTitle)
+	--quest abandoned
+	
+	--table.insert(SRAddonStack,{"QuestAccepted",SRAddonVariables["playerLevel"],posX,posY}});
+end
+
+function SRAddon_StackInsertQuestCompleted(questTitle)
+	SetMapToCurrentZone() 
+	local posX, posY = GetPlayerMapPosition("player");
+	table.insert(SRAddonStack,{"QuestCompleted",questTitle,SRAddonVariables["playerLevel"],posX,posY}});
 end
 
 function SRAddon_SlashCommands()
