@@ -1,5 +1,5 @@
 --------------------------------
---     OnLoad and OnEvent     --
+--     Addon Initilization    --
 --------------------------------
 
 function SRAddon_OnLoad()
@@ -9,7 +9,8 @@ function SRAddon_OnLoad()
     this:RegisterEvent("VARIABLES_LOADED");
     this:RegisterEvent("ZONE_CHANGED_NEW_AREA");
     this:RegisterEvent("TIME_PLAYED_MSG");
-    SRAddon_SlashCommands();
+    InitFrame();
+    SRAddon_SlashCommands()
 end
 
 function SRAddon_OnEvent(this, event, arg1, arg2)
@@ -27,7 +28,6 @@ function SRAddon_OnEvent(this, event, arg1, arg2)
         if ( not SRAddonVariables ) then
             SRAddon_InitVars();
         end
-        InitFrame(); --Defined in sraddonFrame.lua
     elseif ( event == "PLAYER_ENTERING_WORLD" ) then
         -- Run on world loading to ensure player has a level and a position
         SRAddonVariables["playerLevel"] = UnitLevel("player");
@@ -46,14 +46,14 @@ function SRAddon_OnEvent(this, event, arg1, arg2)
         end
 
         -- Build the internal quest log from the quests in the player's quest log.
-        SRAddonVariables["questLog"] = {};
+        SRAddonVariables["currentQuestLog"] = {};
         local count = 0;
         ExpandQuestHeader(0)
         for i=1,GetNumQuestLogEntries() do
             local title, level, _, isHeader = GetQuestLogTitle(i);
             if ( not isHeader ) then
                 count = count + 1;
-                SRAddonVariables["questLog"][count] = title;
+                SRAddonVariables["currentQuestLog"][count] = title;
             end
         end
     elseif ( event == "ZONE_CHANGED_NEW_AREA" ) then
@@ -73,31 +73,6 @@ function SRAddon_InitVars()
 	SRAddonStack = {};
 end
 
-function SRAddon_StackInsertZoneChange()
-	local newZone = GetZoneText();
-	table.insert(SRAddonStack,{"ZoneChanged",SRAddonVariables["currentZone"],newZone}});
-	SRAddonVariables["currentZone"] = newZone;
-end
-
-
-function SRAddon_StackInsertQuestAccepted(questTitle)
-	SetMapToCurrentZone() 
-	local posX, posY = GetPlayerMapPosition("player");
-	table.insert(SRAddonStack,{"QuestAccepted",questTitle,SRAddonVariables["playerLevel"],posX,posY}});
-end
-
-function SRAddon_StackRemoveQuestAccepted(questTitle)
-	--quest abandoned
-	
-	--table.insert(SRAddonStack,{"QuestAccepted",SRAddonVariables["playerLevel"],posX,posY}});
-end
-
-function SRAddon_StackInsertQuestCompleted(questTitle)
-	SetMapToCurrentZone() 
-	local posX, posY = GetPlayerMapPosition("player");
-	table.insert(SRAddonStack,{"QuestCompleted",questTitle,SRAddonVariables["playerLevel"],posX,posY}});
-end
-
 function SRAddon_SlashCommands()
     --HIJACKING DEFAULT WOW FUNCTION
     --Overwrites /played so it functions after we unregister the TIME_PLAYED_MSG event from the default chat frame.
@@ -108,8 +83,8 @@ function SRAddon_SlashCommands()
     end
 
     --Addon-specific commands
-    SLASH_SR1 = "/SR";
-    SlashCmdList["SR"] = SlashCommandParser(msg);
+    SLASH_SR1 = "/sr";
+    SlashCmdList["SR"] = SlashCommandParser;
 end
 
 local CommandList = {
@@ -146,13 +121,13 @@ local CommandList = {
         				end
     				end,
 	["LOG"] = 	function()
-					if ( not SRAddonVariables["questLog"] ) then
+					if ( not SRAddonVariables["currentQuestLog"] ) then
             			ChatFrame1:AddMessage("The quest log does not exist.")
-        			elseif ( next(SRAddonVariables["questLog"]) == nil ) then
+        			elseif ( next(SRAddonVariables["currentQuestLog"]) == nil ) then
             			ChatFrame1:AddMessage("The quest log is empty.")
         			else
             			ChatFrame1:AddMessage("Quests found. Listing quests:")
-            			for i,quest in SRAddonVariables["questLog"] do
+            			for i,quest in SRAddonVariables["currentQuestLog"] do
                 			ChatFrame1:AddMessage("The quest "..quest.." is in quest log position "..i..".")
             			end
         			end
@@ -165,20 +140,59 @@ local CommandList = {
             			ChatFrame1:AddMessage("Debug state set to false.");
         			end
     			end
-	};
-end
+};
 
-local function SlashCommandParser(msg)
-	if string.match(msg, '^.-%s')
-		if CommandList[string.match(string.upper(msg), '^.-%s')] then
-			CommandList[string.match(string.upper(msg), '^.-%s')]
-		end
-	else
-		ChatFrame1:AddMessage("Input not defined for SRAddon");
+function SlashCommandParser(msg)
+    if ( msg ) then
+        pos1, pos2 = strfind(msg,'^.-%s')
+        local command = "";
+        local arg = "";
+        if ( pos1 and pos2 ) then
+            command = strsub(msg,pos1,pos2-1)
+            arg = strsub(msg,pos2+1)
+        else
+            command = msg;
+        end
+        if CommandList[string.upper(command)] then
+            CommandList[string.upper(command)](arg)
+        else
+            ChatFrame1:AddMessage("Function '"..command.."' not defined for SRAddon");
+        end
+    else
+        ChatFrame1:AddMessage("Unrecognized input for SRAddon");
 	end
 end
 
-local function GetPlayedTimeString(arg1,arg2)
+
+------------------------------
+--      Stack handlers      --
+------------------------------
+
+function SRAddon_StackInsertZoneChange()
+	local newZone = GetZoneText();
+    table.insert(SRAddonStack,{"ZoneChanged",SRAddonVariables["currentZone"],newZone});
+	SRAddonVariables["currentZone"] = newZone;
+end
+
+function SRAddon_StackInsertQuestAccepted(questTitle)
+	SetMapToCurrentZone()
+	local posX, posY = GetPlayerMapPosition("player");
+	table.insert(SRAddonStack,{"QuestAccepted",questTitle,SRAddonVariables["playerLevel"],posX,posY});
+end
+
+function SRAddon_StackRemoveQuestAccepted(questTitle)
+	--quest abandoned
+
+	--table.insert(SRAddonStack,{"QuestAccepted",SRAddonVariables["playerLevel"],posX,posY});
+end
+
+function SRAddon_StackInsertQuestCompleted(questTitle)
+	SetMapToCurrentZone()
+	local posX, posY = GetPlayerMapPosition("player");
+	table.insert(SRAddonStack,{"QuestCompleted",questTitle,SRAddonVariables["playerLevel"],posX,posY});
+end
+
+function GetPlayedTimeString(arg1,arg2)
 	--convert the life time of the character into a formatted string
 	local totalTime = arg1;
 	local localTime = arg2;
@@ -227,9 +241,9 @@ function AbandonQuest()
         if ( SRAddonVariables["DEBUG_MODE"] ) then
             ChatFrame1:AddMessage("The abandoned quest is named: "..GetAbandonQuestName());
         end
-        for i,questName in SRAddonVariables["questLog"] do
+        for i,questName in SRAddonVariables["currentQuestLog"] do
             if ( questName == GetAbandonQuestName() ) then
-                table.remove(SRAddonVariables["questLog"], i);
+                table.remove(SRAddonVariables["currentQuestLog"], i);
                 break
             end
 		end
@@ -244,10 +258,10 @@ function QuestDetailAcceptButton_OnClick()
 	AcceptQuest();
 
 	-- Added code to manage our quest log
-	table.insert(SRAddonVariables["questLog"],GetTitleText())
+	table.insert(SRAddonVariables["currentQuestLog"],GetTitleText())
 	if ( SRAddonVariables["DEBUG_MODE"] ) then
         ChatFrame1:AddMessage("These quests are now in the quest log:")
-        for i,questName in SRAddonVariables["questLog"] do
+        for i,questName in SRAddonVariables["currentQuestLog"] do
             ChatFrame1:AddMessage(questName)
         end
     end
@@ -266,9 +280,9 @@ function QuestRewardCompleteButton_OnClick()
 		if ( SRAddonVariables["DEBUG_MODE"] ) then
             ChatFrame1:AddMessage("You have completed the quest "..name);
         end
-		for i,questName in SRAddonVariables["questLog"] do
+		for i,questName in SRAddonVariables["currentQuestLog"] do
             if ( questName == name ) then
-                table.remove(SRAddonVariables["questLog"], i);
+                table.remove(SRAddonVariables["currentQuestLog"], i);
                 break
             end
 		end
