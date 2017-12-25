@@ -5,6 +5,7 @@
 function InitFrame()
     InitVars()
     SRBaseFrame = CreateFrame("Frame", "SRAddonBaseFrame")
+    frames["SRAddonBaseFrame"] = SRBaseFrame;
     SRBaseFrame:SetHeight(314)
     SRBaseFrame:SetWidth(200)
     --SRBaseFrame:SetBackdrop({bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background", edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile = true, tileSize = 8, edgeSize = 16, insets = {left = 3, right = 3, top = 3, bottom = 3}})
@@ -20,107 +21,48 @@ function InitFrame()
     SRBaseFrame:SetScript("OnDragStop", StopMovingOrSizing)
 
     --title frame
-    SRTitleTileFrame = CreateFrame("Frame", "SRAddonTitleTileFrame",SRBaseFrame)
-    SRTitleTileFrame:SetHeight(32)
-    SRTitleTileFrame:SetWidth(200)
-    SRTitleTileFrame:SetBackdrop({bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background", edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile = true, tileSize = 8, edgeSize = 16, insets = {left = 3, right = 3, top = 3, bottom = 3}})
-    SRTitleTileFrame:SetBackdropColor(0.18,0.27,0.5)
-    SRTitleTileFrame:SetBackdropBorderColor(0.6, 0.6, 0.6)
-    SRTitleTileFrame:SetPoint("TOPLEFT", SRBaseFrame, "TOPLEFT", 0, 0)
-    SRTitleTileFrame:SetFrameLevel(SRBaseFrame:GetFrameLevel()+1)
-    SRTitleTileFrame:CreateFontString("SRAddonTitle",this:GetFrameLevel()+1,"GameFontNormal")
+    SRCreateChildTileFrame("TitleTileFrame", SRBaseFrame)
+    frames["SRAddonTitleTileFrame"]:SetHeight(32)
+    frames["SRAddonTitleTileFrame"]:SetPoint("TOPLEFT", SRBaseFrame, "TOPLEFT", 0, 0)
+    frames["SRAddonTitleTileFrame"]:CreateFontString("SRAddonTitle",this:GetFrameLevel()+1,"GameFontNormal")
     SRAddonTitle:SetPoint("LEFT", SRAddonTitleTileFrame, "LEFT", 20, 0)
     SRAddonTitle:SetText("Speed Runners' Addon")
 
-
     --close button
     SRBaseFrame.CloseButton = CreateFrame("Button", "SRAddonBaseFrameCloseButton", SRBaseFrame,"UIPanelCloseButton")
+    buttons["SRAddonBaseFrameCloseButton"] = SRBaseFrame.CloseButton;
     SRBaseFrame.CloseButton:SetPoint("TOPRIGHT", SRAddonBaseFrame, "TOPRIGHT", 0, 0)
-    SRBaseFrame.CloseButton:SetBackdrop({
-        bgFile = nil,
-        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-        edgeSize = 16,
-    })
+    SRBaseFrame.CloseButton:SetBackdrop({bgFile = nil,edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border", edgeSize = 16})
     SRBaseFrame.CloseButton:SetBackdropBorderColor(0.6, 0.6, 0.6)
     SRAddonBaseFrameCloseButton:SetScript("OnClick",HideFrames)
     SRAddonBaseFrameCloseButton:SetFrameLevel(10)
 
     --guide tile
-    SRGuideTileFrame = CreateFrame("Frame", "SRAddonGuideTileFrame",SRBaseFrame)
-    SRGuideTileFrame:SetHeight(100)
-    SRGuideTileFrame:SetWidth(200)
-    SRGuideTileFrame:SetBackdrop({bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background", edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile = true, tileSize = 8, edgeSize = 16, insets = {left = 3, right = 3, top = 3, bottom = 3}})
-    SRGuideTileFrame:SetBackdropColor(0.18,0.27,0.5)
-    SRGuideTileFrame:SetBackdropBorderColor(0.6, 0.6, 0.6)
-    SRGuideTileFrame:SetPoint("TOP", SRTitleTileFrame, "BOTTOM", 0, 8)
-    SRGuideTileFrame:SetFrameLevel(SRBaseFrame:GetFrameLevel()+1)
-    parentFrame = SRAddonGuideTileFrame;
-
-    local buttonName = "GuideOpenButton";
-    SRCreateChildButton(buttonName, parentFrame, SRGuideOpenButton_OnClick)
-    buttons["SRAddon"..buttonName]:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Up")
-    buttons["SRAddon"..buttonName]:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Down")
-    buttons["SRAddon"..buttonName]:SetPoint("LEFT", parentFrame, "LEFT", 8, 0)
-
-    local buttonName = "GuideCloseButton";
-    SRCreateChildButton(buttonName, parentFrame, SRGuideCloseButton_OnClick)
-    buttons["SRAddon"..buttonName]:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Up")
-    buttons["SRAddon"..buttonName]:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Down")
-    buttons["SRAddon"..buttonName]:SetPoint("LEFT", parentFrame, "LEFT", 8, 0)
+    SRCreateChildTileFrame("GuideTileFrame", SRBaseFrame)
+    frames["SRAddonGuideTileFrame"]:SetPoint("TOP", frames["SRAddonTitleTileFrame"], "BOTTOM", 0, 8)
+    --buttons
+    SRCreateChildButton("GuideOpenButton", frames["SRAddonGuideTileFrame"], SRGuideOpenButton_OnClick, "LEFT")
+    SRCreateChildButton("GuideCloseButton", frames["SRAddonGuideTileFrame"], SRGuideCloseButton_OnClick, "RIGHT")
 
     --log tile
-    SRLogTileFrame = CreateFrame("Frame", "SRAddonLogTileFrame",SRBaseFrame)
-    SRLogTileFrame:SetHeight(100)
-    SRLogTileFrame:SetWidth(200)
-    SRLogTileFrame:SetBackdrop({bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background", edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile = true, tileSize = 8, edgeSize = 16, insets = {left = 3, right = 3, top = 3, bottom = 3}})
-    SRLogTileFrame:SetBackdropColor(0.18,0.27,0.5)
-    SRLogTileFrame:SetBackdropBorderColor(0.6, 0.6, 0.6)
-    SRLogTileFrame:SetPoint("TOP", SRGuideTileFrame, "BOTTOM", 0, 8)
-    SRLogTileFrame:SetFrameLevel(SRBaseFrame:GetFrameLevel()+1)
-    parentFrame = SRAddonLogTileFrame;
-
-    local buttonName = "LogOpenButton";
-    SRCreateChildButton(buttonName, parentFrame, SRLogOpenButton_OnClick)
-    buttons["SRAddon"..buttonName]:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Up")
-    buttons["SRAddon"..buttonName]:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Down")
-    buttons["SRAddon"..buttonName]:SetPoint("LEFT", parentFrame, "LEFT", 8, 0)
-
-    local buttonName = "LogCloseButton";
-    SRCreateChildButton(buttonName, parentFrame, SRLogCloseButton_OnClick)
-    buttons["SRAddon"..buttonName]:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Up")
-    buttons["SRAddon"..buttonName]:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Down")
-    buttons["SRAddon"..buttonName]:SetPoint("LEFT", parentFrame, "LEFT", 8, 0)
+    SRCreateChildTileFrame("LogTileFrame", SRBaseFrame)
+    frames["SRAddonLogTileFrame"]:SetPoint("TOP", frames["SRAddonGuideTileFrame"], "BOTTOM", 0, 8)
+    --button
+    SRCreateChildButton("LogOpenButton", frames["SRAddonLogTileFrame"], SRLogOpenButton_OnClick, "LEFT")
+    SRCreateChildButton("LogCloseButton", frames["SRAddonLogTileFrame"], SRLogCloseButton_OnClick, "RIGHT")
 
     --summary tile
-    SRSummaryTileFrame = CreateFrame("Frame", "SRAddonSummaryTileFrame",SRBaseFrame)
-    SRSummaryTileFrame:SetHeight(100)
-    SRSummaryTileFrame:SetWidth(200)
-    SRSummaryTileFrame:SetBackdrop({bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background", edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile = true, tileSize = 8, edgeSize = 16, insets = {left = 3, right = 3, top = 3, bottom = 3}})
-    SRSummaryTileFrame:SetBackdropColor(0.18,0.27,0.5)
-    SRSummaryTileFrame:SetBackdropBorderColor(0.6, 0.6, 0.6)
-    SRSummaryTileFrame:SetPoint("TOP", SRLogTileFrame, "BOTTOM", 0, 8)
-    SRSummaryTileFrame:SetFrameLevel(SRBaseFrame:GetFrameLevel()+1)
-    parentFrame = SRAddonSummaryTileFrame;
-
-    local buttonName = "SummaryOpenButton";
-    SRCreateChildButton(buttonName, parentFrame, SRSummaryOpenButton_OnClick)
-    buttons["SRAddon"..buttonName]:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Up")
-    buttons["SRAddon"..buttonName]:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Down")
-    buttons["SRAddon"..buttonName]:SetPoint("LEFT", parentFrame, "LEFT", 8, 0)
-
-    local buttonName = "SummaryCloseButton";
-    SRCreateChildButton(buttonName, parentFrame, SRSummaryCloseButton_OnClick)
-    buttons["SRAddon"..buttonName]:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Up")
-    buttons["SRAddon"..buttonName]:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Down")
-    buttons["SRAddon"..buttonName]:SetPoint("LEFT", parentFrame, "LEFT", 8, 0)
-
-    -- <NormalTexture file="Interface\Buttons\UI-SpellbookIcon-NextPage-Up"/>
-    -- <PushedTexture file="Interface\Buttons\UI-SpellbookIcon-NextPage-Down"/>
+    SRCreateChildTileFrame("SummaryTileFrame", SRBaseFrame)
+    frames["SRAddonSummaryTileFrame"]:SetPoint("TOP", frames["SRAddonLogTileFrame"], "BOTTOM", 0, 8)
+    --buttons
+    SRCreateChildButton("SummaryOpenButton", frames["SRAddonSummaryTileFrame"], SRSummaryOpenButton_OnClick, "LEFT")
+    SRCreateChildButton("SummaryCloseButton", frames["SRAddonSummaryTileFrame"], SRSummaryCloseButton_OnClick, "RIGHT")
 
     --Create a button that begins an aoe farming session log
     SRAddonAoEBeginButton = CreateFrame("Button", "SRAddonFrameAoEBeginButton", SRAddonLogTileFrame,"UIPanelButtonTemplate")
+    buttons["SRAddonFarmBeginButton"] = SRAddonAoEBeginButton
     SRAddonFrameAoEBeginButton:SetPoint("CENTER", SRAddonLogTileFrame, "CENTER", 0, 0)
-    SRAddonFrameAoEBeginButton:SetFrameStrata("DIALOG")
+    SRAddonFrameAoEBeginButton:SetFrameLevel(SRAddonLogTileFrame:GetFrameLevel()+1)
     SRAddonFrameAoEBeginButton:SetScript("OnClick",AoEBeginButton_OnClick)
     SRAddonFrameAoEBeginButton:SetText("Begin session")
     local width = SRAddonFrameAoEBeginButton:GetTextWidth();
@@ -130,63 +72,62 @@ function InitFrame()
 
     --Button to end the aoe farming session
     SRAddonAoEEndButton = CreateFrame("Button", "SRAddonFrameAoEEndButton", SRAddonLogTileFrame,"UIPanelButtonTemplate")
+    buttons["SRAddonFarmEndButton"] = SRAddonAoEEndButton
     SRAddonFrameAoEEndButton:SetPoint("CENTER", SRAddonLogTileFrame, "CENTER", 0, 0)
-    SRAddonFrameAoEEndButton:SetFrameStrata("DIALOG")
+    SRAddonFrameAoEEndButton:SetFrameLevel(SRAddonLogTileFrame:GetFrameLevel()+1)
     SRAddonFrameAoEEndButton:SetScript("OnClick",AoEEndButton_OnClick)
     SRAddonFrameAoEEndButton:SetText("End session")
     SRAddonFrameAoEEndButton:SetWidth(width+16);
     SRAddonFrameAoEEndButton:SetHeight(height+8);
 
-    --[[
-    --Create drop down menu
-    local LevelSelect = CreateFrame("Frame", "LevelSelectDropDownMenu", SRAddonFrame, "UIDropDownMenuTemplate")
-    LevelSelect:SetFrameStrata("DIALOG")
-    LevelSelect:SetPoint("TOP",SRAddonFrame, "TOP", 0, 0)
-    LevelSelect:SetScript("OnShow", LevelSelect_OnShow)
-    UIDropDownMenu_Initialize(evelSelectDropDownMenu, LevelSelect_Init);
-    UIDropDownMenu_SetWidth(75, LevelSelectDropDownMenu)
-    ]]--
-
-    --Creates text area
-    --SRBaseFrame:CreateFontString("Option1TextFontString","DIALOG","GameFontNormal")
-    --Option1TextFontString:SetPoint("TOP", SRAddonBaseFrame, "TOP", 0, -10)
-    --Option1TextFontString:SetText("Speed Runners' Addon")
-
     --Hide all frames
     HideFrames()
-    SRBaseFrameRegisterVisibility()
+
+    --populate widgets table with ui elements
+    for key, button in buttons do
+        table.insert(widgets, button)
+    end
+    for key, frame in frames do
+        table.insert(widgets, frame)
+    end
+    --hide alternate buttons
+    SRAddonFrameAoEEndButton:Hide()
+    SRAddonGuideCloseButton:Hide()
+    SRAddonLogCloseButton:Hide()
+    SRAddonSummaryCloseButton:Hide()
 end
 
 function InitVars()
     buttons = {};
     frames = {};
-    visibility = {};
+    widgets = {};
     beginBool = true;
     endBool = false;
 end
 
-function SRCreateChildButton(buttonName, parentFrame, OnClickFunction)
+function SRCreateChildTileFrame(tileFrameName, parentFrame)
+    local longName = "SRAddon"..tileFrameName;
+    frames[longName] = CreateFrame("Frame", longName , parentFrame)
+    frames[longName]:SetHeight(100)
+    frames[longName]:SetWidth(200)
+    frames[longName]:SetBackdrop({bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background", edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile = true, tileSize = 8, edgeSize = 16, insets = {left = 3, right = 3, top = 3, bottom = 3}})
+    frames[longName]:SetBackdropColor(0.18,0.27,0.5)
+    frames[longName]:SetBackdropBorderColor(0.6, 0.6, 0.6)
+    frames[longName]:SetFrameLevel(parentFrame:GetFrameLevel()+1)
+end
+
+function SRCreateChildButton(buttonName, parentFrame, OnClickFunction, orientation)
     local longName = "SRAddon"..buttonName;
     buttons[longName] = CreateFrame("Button", longName, parentFrame,"UIPanelCloseButton")
     buttons[longName]:SetFrameLevel(parentFrame:GetFrameLevel()+1)
     buttons[longName]:SetScript("OnClick", OnClickFunction)
-end
-
-function SRBaseFrameRegisterVisibility()
-    for i, childFrame in {this:GetChildren()} do
-        SRRegisterVisibility(childFrame)
-    end
-    visibility[this:GetName()] = this:IsVisible();
-end
-
-function SRRegisterVisibility(frame)
-    for i, childFrame in {frame:GetChildren()} do
-        SRRegisterVisibility(childFrame)
-    end
-    if ( frame:IsShown()) then
-        visibility[frame:GetName()] = frame:IsShown();
-    else
-        visibility[frame:GetName()] = 0;
+    buttons[longName]:SetPoint("LEFT", parentFrame, "LEFT", 8, 0)
+    if ( orientation == "LEFT" ) then
+        buttons[longName]:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Up")
+        buttons[longName]:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Down")
+    elseif  ( orientation == "RIGHT" ) then
+        buttons[longName]:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Up")
+        buttons[longName]:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Down")
     end
 end
 
@@ -229,8 +170,6 @@ end
 function AoEBeginButton_OnClick()
     PlaySound("GAMEGENERICBUTTONPRESS")
     ChatFrame1:AddMessage("Beginning session")
-    beginBool = not beginBool;
-    endBool = not endBool;
     SRAddonAoEBeginButton:Hide()
     SRAddonAoEEndButton:Show()
 end
@@ -238,22 +177,12 @@ end
 function AoEEndButton_OnClick()
     PlaySound("GAMEGENERICBUTTONPRESS")
     ChatFrame1:AddMessage("Ending session")
-    beginBool = not beginBool;
-    endBool = not endBool;
     SRAddonAoEEndButton:Hide()
     SRAddonAoEBeginButton:Show()
 end
 
 function ShowFrames()
     SRAddonBaseFrame:Show()
-    SRAddonGuideCloseButton:Hide()
-    SRAddonLogCloseButton:Hide()
-    SRAddonSummaryCloseButton:Hide()
-    if ( beginBool ) then
-        SRAddonFrameAoEEndButton:Hide()
-    elseif ( endBool ) then
-        SRAddonFrameAoEBeginButton:Hide()
-    end
 end
 
 function HideFrames()
@@ -271,6 +200,16 @@ end
 
 
 --drop down menu
+
+    --[[
+    --Create drop down menu
+    local LevelSelect = CreateFrame("Frame", "LevelSelectDropDownMenu", SRAddonFrame, "UIDropDownMenuTemplate")
+    LevelSelect:SetFrameStrata("DIALOG")
+    LevelSelect:SetPoint("TOP",SRAddonFrame, "TOP", 0, 0)
+    LevelSelect:SetScript("OnShow", LevelSelect_OnShow)
+    UIDropDownMenu_Initialize(evelSelectDropDownMenu, LevelSelect_Init);
+    UIDropDownMenu_SetWidth(75, LevelSelectDropDownMenu)
+
 function LevelSelect_Init()
     --Populate drop down menu. Can only contain 32 elements.
     local info;
@@ -299,3 +238,4 @@ function LevelSelect_OnClick()
 
     LevelSelect_OnShow();
 end
+]]--

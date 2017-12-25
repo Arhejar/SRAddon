@@ -23,7 +23,7 @@ function SRAddon_OnEvent(this, event, arg1, arg2)
         end
     elseif ( event == "PLAYER_LEVEL_UP" ) then
         -- Track player level
-        SRAddonVariables["playerLevel"] = arg1;
+        SRAddon_StackInsertPlayerLeveled(arg1)
     elseif ( event == "VARIABLES_LOADED" ) then
         if ( not SRAddonVariables ) then
             SRAddon_InitVars();
@@ -92,13 +92,16 @@ local CommandList = {
        			 		ShowFrames();
     				end,
 	["QUEST"] = function(index)
-					if ( index == math.floor(index) and index > 0 and GetNumQuestLogEntries() >= index ) then
-        			local title, level, _, isHeader = GetQuestLogTitle(index);
-        			ChatFrame1:AddMessage(title);
-        			ChatFrame1:AddMessage(level);
-       	 			if isHeader then
-            			ChatFrame1:AddMessage(isHeader);
-        			end
+                    index = tonumber(index)
+                    if ( GetNumQuestLogEntries() == 0 ) then
+                        ChatFrame1:AddMessage("The quest log is empty.")
+					elseif ( index == math.floor(index) and index > 0 and GetNumQuestLogEntries() >= index ) then
+                        local title, level, _, isHeader = GetQuestLogTitle(index);
+                        ChatFrame1:AddMessage(title);
+                        ChatFrame1:AddMessage(level);
+                        if isHeader then
+                            ChatFrame1:AddMessage(isHeader);
+                        end
 					else
 						ChatFrame1:AddMessage("Function QUEST expects an integer as input.");
 					end
@@ -143,23 +146,21 @@ local CommandList = {
 };
 
 function SlashCommandParser(msg)
-    if ( msg ) then
-        pos1, pos2 = strfind(msg,'^.-%s')
-        local command = "";
-        local arg = "";
-        if ( pos1 and pos2 ) then
-            command = strsub(msg,pos1,pos2-1)
-            arg = strsub(msg,pos2+1)
-        else
-            command = msg;
-        end
-        if CommandList[string.upper(command)] then
-            CommandList[string.upper(command)](arg)
-        else
-            ChatFrame1:AddMessage("Function '"..command.."' not defined for SRAddon");
-        end
+    if ( msg == "" ) then
+        CommandList["FRAME"]()
     else
-        ChatFrame1:AddMessage("Unrecognized input for SRAddon");
+        local words = {}
+        --read all words (seperated by whitespace)
+        for w in string.gfind(msg,'(%S+)') do
+            table.insert(words, w)
+        end
+        command = string.upper(words[1]);
+        table.remove(words,1);
+        if CommandList[command] then
+            CommandList[command](unpack(words))
+        else
+            ChatFrame1:AddMessage("Unrecognized command '"..command.."' for SRAddon");
+        end
 	end
 end
 
@@ -174,16 +175,17 @@ function SRAddon_StackInsertZoneChange()
 	SRAddonVariables["currentZone"] = newZone;
 end
 
+function SRAddon_StackInsertPlayerLeveled(newLevel)
+    SetMapToCurrentZone()
+	local posX, posY = GetPlayerMapPosition("player");
+    table.insert(SRAddonStack,{"PlayerLeveled",SRAddonVariables["playerLevel"],newLevel,posX,posY});
+	SRAddonVariables["playerLevel"] = newLevel;
+end
+
 function SRAddon_StackInsertQuestAccepted(questTitle)
 	SetMapToCurrentZone()
 	local posX, posY = GetPlayerMapPosition("player");
 	table.insert(SRAddonStack,{"QuestAccepted",questTitle,SRAddonVariables["playerLevel"],posX,posY});
-end
-
-function SRAddon_StackRemoveQuestAccepted(questTitle)
-	--quest abandoned
-
-	--table.insert(SRAddonStack,{"QuestAccepted",SRAddonVariables["playerLevel"],posX,posY});
 end
 
 function SRAddon_StackInsertQuestCompleted(questTitle)
@@ -191,6 +193,20 @@ function SRAddon_StackInsertQuestCompleted(questTitle)
 	local posX, posY = GetPlayerMapPosition("player");
 	table.insert(SRAddonStack,{"QuestCompleted",questTitle,SRAddonVariables["playerLevel"],posX,posY});
 end
+
+function SRAddon_StackAbandonQuest(questTitle)
+	--quest abandoned
+	for i = table.getn(SRAddonStack), 1, -1 do
+        if ( SRAddonStack[i][1] == "QuestAccepted" and SRAddonStack[i][2] == questTitle ) then
+            table.remove(SRAddonStack,i);
+            return
+        end
+    end
+end
+
+-----------------------------
+--    Utility Functions    --
+-----------------------------
 
 function GetPlayedTimeString(arg1,arg2)
 	--convert the life time of the character into a formatted string
@@ -201,8 +217,8 @@ function GetPlayedTimeString(arg1,arg2)
 	local periods1 = {};
 	local periods2 = {};
 	for i,seconds in secondsPerPeriod do
-		numPeriods1 = math.fmod(totalTime, seconds);
-		numPeriods2 = math.fmod(localTime, seconds);
+		numPeriods1 = math.floor(totalTime/seconds);
+		numPeriods2 = math.floor(localTime/seconds);
 		table.insert(periods1,numPeriods1);
 		table.insert(periods2,numPeriods2);
 		totalTime = totalTime - numPeriods1*seconds;
@@ -212,16 +228,16 @@ function GetPlayedTimeString(arg1,arg2)
 	local playedTimeString2 = "Time played this level: ";
 	for i,periods in periods1 do
 		if ( periods==1 ) then
-			local playedTimeString1 = playedTimeString1..periods.." "..periodName[i].." ";
+			playedTimeString1 = playedTimeString1..periods.." "..periodName[i].." ";
 		else
-			local playedTimeString1 = playedTimeString1..periods.." "..periodName[i].."s ";
+			playedTimeString1 = playedTimeString1..periods.." "..periodName[i].."s ";
 		end
 	end
 	for i,periods in periods2 do
 		if ( periods==1 ) then
-			local playedTimeString2 = playedTimeString2..periods.." "..periodName[i].." ";
+			playedTimeString2 = playedTimeString2..periods.." "..periodName[i].." ";
 		else
-			local playedTimeString2 = playedTimeString2..periods.." "..periodName[i].."s ";
+			playedTimeString2 = playedTimeString2..periods.." "..periodName[i].."s ";
 		end
 	end
 	return playedTimeString1, playedTimeString2;
@@ -231,28 +247,35 @@ end
 -- Overwriting Blizzard UI element functions --
 -----------------------------------------------
 
-local SRAbandonQuestFunction = AbandonQuest;
-abandonFlag = 0;
-function AbandonQuest()
-    -- This code is apparently run twice.
-    -- Added code to manage our quest log
-    abandonFlag = not abandonFlag;
-    if ( abandonFlag ) then
-        if ( SRAddonVariables["DEBUG_MODE"] ) then
-            ChatFrame1:AddMessage("The abandoned quest is named: "..GetAbandonQuestName());
-        end
-        for i,questName in SRAddonVariables["currentQuestLog"] do
-            if ( questName == GetAbandonQuestName() ) then
-                table.remove(SRAddonVariables["currentQuestLog"], i);
-                break
-            end
-		end
-    end
+-- Why can't we just hook scripts to UI elements in this version? =(
 
-    -- Run the normal 1.12 WoW function
-    return SRAbandonQuestFunction();
+
+--Overwrites the YES button of the static popup that appears after a quest is marked for abandonment
+--jf. lines 749 to 774 of StaticPopup.lua of the 1.12 WoW source code
+ABANDONQUEST_OnAccept = function()
+    -- Normal 1.12 WoW code
+    AbandonQuest();
+	PlaySound("igQuestLogAbandonQuest");
+
+	-- Added code to manage our quest log
+	SRAddon_StackAbandonQuest(GetAbandonQuestName())
 end
 
+ABANDONQUESTWITHITEMS_OnAccept = function()
+    -- Normal 1.12 WoW code
+    AbandonQuest();
+	PlaySound("igQuestLogAbandonQuest");
+
+	-- Added code to manage our quest log
+	SRAddon_StackAbandonQuest(GetAbandonQuestName())
+end
+
+StaticPopupDialogs["ABANDON_QUEST"]["OnAccept"] = ABANDONQUEST_OnAccept;
+StaticPopupDialogs["ABANDON_QUEST_WITH_ITEMS"]["OnAccept"] = ABANDONQUESTWITHITEMS_OnAccept;
+
+
+--Overwrites the Accept Quest button offers by quest givers
+--jf. lines 571 to 573 of QuestFrame.lua of the 1.12 WoW source code
 function QuestDetailAcceptButton_OnClick()
     -- Normal 1.12 WoW code
 	AcceptQuest();
@@ -265,8 +288,12 @@ function QuestDetailAcceptButton_OnClick()
             ChatFrame1:AddMessage(questName)
         end
     end
+    SRAddon_StackInsertQuestAccepted(GetTitleText())
 end
 
+
+--Overwrites the Complete Quest button offers by quest givers
+--jf. lines 96 to 103 of QuestFrame.lua of the 1.12 WoW source code
 function QuestRewardCompleteButton_OnClick()
     -- Normal 1.12 WoW code
 	if ( QuestFrameRewardPanel.itemChoice == 0 and GetNumQuestChoices() > 0 ) then
@@ -289,21 +316,5 @@ function QuestRewardCompleteButton_OnClick()
 
 		table.insert(SRAddonVariables["completedQuestLog"],{name,SRAddonVariables["playerLevel"],SRAddonVariables["currentZone"]});
     end
+    SRAddon_StackInsertQuestCompleted(name)
 end
-
-
---[[FIX THIS
-function SR_DisplayTimePlayed(totalTime, levelTime)
-	local info = ChatTypeInfo["SYSTEM"];
-    local d;
-	local h;
-	local m;
-	local s;
-	d, h, m, s = ChatFrame_TimeBreakDown(totalTime);
-	local string = format(TEXT(TIME_PLAYED_TOTAL), format(TEXT(TIME_DAYHOURMINUTESECOND), d, h, m, s));
-	this:AddMessage(string, info.r, info.g, info.b, info.id);
-
-	d, h, m, s = ChatFrame_TimeBreakDown(levelTime);
-	local string = format(TEXT(TIME_PLAYED_LEVEL), format(TEXT(TIME_DAYHOURMINUTESECOND), d, h, m, s));
-this:AddMessage(string, info.r, info.g, info.b, info.id);
-]]--

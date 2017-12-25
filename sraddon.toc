@@ -4,7 +4,7 @@
 ## Notes: this is my custom note?
 ## Author: K9Jack
 ## SavedVariables:
-## SavedVariablesPerCharacter: SRAddonVariables
+## SavedVariablesPerCharacter: SRAddonVariables, SRAddonStack
 sraddonFrame.lua
 sraddon.lua
 sraddon.xml
